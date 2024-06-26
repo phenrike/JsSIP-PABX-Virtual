@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JsSIP Example</title>
+    <script src="jssip-3.10.0.js"></script>
+</head>
+
+<body>
+    <h1>JsSIP Example</h1>
+    
+    <script>        
+        //var socket = new JsSIP.WebSocketInterface('ws://10.1.2.27:10080');
+        //var socket = new JsSIP.WebSocketInterface('ws://10.1.2.27:8090');
+        //var socket = new JsSIP.WebSocketInterface('ws://10.1.2.27:8028/ws');
+        var socket = new JsSIP.WebSocketInterface('wss://rcom.rcomtelecom.com.br:8089/ws');
+        var configuration = {
+            sockets: [socket],
+            uri: 'sip:0002@rcom.rcomtelecom.com.br',
+            password: 'PABWEB*!305995'
+            // uri: 'sip:0001@rcom.rcomtelecom.com.br',
+            // password: 'PABWEB*!444380'            
+        };
+
+        var coolPhone = new JsSIP.UA(configuration);
+
+        coolPhone.on('connected', function (e) {
+            //debugger;
+            console.log('// connected // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+        coolPhone.on('disconnected', function (e) {
+            //debugger;
+            console.log('// disconnected // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+        coolPhone.on('newRTCSession', function (e) {
+            //debugger;
+            //console.log('// newRTCSession // ' + (e ? JSON.stringify(e) : 'no event data'));
+
+            console.log('// newRTCSession // ');
+            var session = e.session;
+            //debugger;
+            if (session.direction === 'incoming') {
+                console.log('Incoming call from ' + session.remote_identity.uri.toString());
+                console.log('incoming');
+
+                // Answer the call
+                session.answer({
+                    mediaConstraints: {
+                        audio: true,
+                        video: false
+                    }
+                });                
+
+                session.on('progress', function (e) {
+                    //debugger;
+                    console.log('call is in progress');
+                });
+
+                session.on('accepted', function (e) {
+                    //debugger;
+                    console.log('call accepted');
+                });
+
+                session.on('failed', function (e) {
+                    //debugger;
+                    console.log('call failed with cause: ' + e.cause);
+                });
+
+                session.on('ended', function (e) {
+                    //debugger;
+                    console.log('call ended with cause: ' + e.cause);
+                });
+
+                session.on('confirmed', function() {
+                    //debugger;
+                    console.log('Call confirmed');
+                    const localStream = session.connection.getLocalStreams()[0];
+                    const remoteStream = session.connection.getRemoteStreams()[0];
+
+                    // Attach the remote stream to an audio element to listen to the audio
+                    const audioElement = document.createElement('audio');
+                    audioElement.srcObject = remoteStream;
+                    audioElement.play();
+                });                
+            }
+        });
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            //debugger
+            // Do something with the stream if needed
+            console.log('// getUserMedia // ' + (stream ? JSON.stringify(stream) : 'no event data'));
+        })
+        .catch(function(err) {
+            console.error('Error accessing media devices.', err);
+        });
+
+        coolPhone.on('newMessage', function (e) {
+            //debugger;
+            console.log('// newMessage // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+        coolPhone.on('registered', function (e) {
+            //debugger;
+            console.log('// registered // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+        coolPhone.on('unregistered', function (e) {
+            //debugger;
+            console.log('// unregistered // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+        coolPhone.on('registrationFailed', function (e) {
+            //debugger;
+            console.log('// registrationFailed // ' + (e ? JSON.stringify(e) : 'no event data'));
+        });
+
+        coolPhone.start();
+
+        // Register callbacks to desired call events
+        var eventHandlers = {
+            'progress': function (e) {
+                //debugger;
+                console.log('call is in progress' + (e ? JSON.stringify(e) : 'no event data'));
+            },
+            'failed': function (e) {
+                //debugger;
+                console.log('call failed with cause: ' + e.cause);
+            },
+            'ended': function (e) {
+                //debugger;
+                console.log('call ended with cause: ' + e.cause);
+            },
+            'confirmed': function (e) {
+                //debugger;
+                console.log('call confirmed' + (e ? JSON.stringify(e) : 'no event data'));
+
+                const localStream = session.connection.getLocalStreams()[0];
+                const remoteStream = session.connection.getRemoteStreams()[0];
+
+                // Attach the remote stream to an audio element to listen to the audio
+                const audioElement = document.createElement('audio');
+                audioElement.srcObject = remoteStream;
+                audioElement.play();
+            }
+        };
+
+        var options = {
+            'eventHandlers': eventHandlers,
+            'mediaConstraints': { 'audio': true, 'video': false },
+            'rtcOfferConstraints': {
+                    'offerToReceiveAudio': 1,
+                    'offerToReceiveVideo': 0
+                }
+        };
+
+       //var session = coolPhone.call('sip:0001@rcom.rcomtelecom.com.br', options);
+       //var session = coolPhone.call('sip:9320@rcom.rcomtelecom.com.br', options);
+        
+        
+    </script>
+</body>
+
+</html>
